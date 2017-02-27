@@ -100,9 +100,9 @@ public abstract class ClusterToolCmd implements Runnable {
     }
 
     public static class Node {
-        private String server = "127.0.0.1";
-        private String port = "7199";
-        private String username = EMPTY;
-        private String password = EMPTY;
+        protected String server = "127.0.0.1";
+        protected String port = "7199";
+        protected String username = EMPTY;
+        protected String password = EMPTY;
     }
 }
