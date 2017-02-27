@@ -1,7 +1,6 @@
 package com.wenyu;
 
-import com.google.common.base.Throwables;
-import com.wenyu.clustertools.ClusterToolCmd;
+import com.wenyu.clustertools.GetTimeout;
 import com.wenyu.clustertools.Ring;
 import com.wenyu.clustertools.Status;
 import io.airlift.command.*;
@@ -23,6 +22,7 @@ public class ClusterTool {
         commands.add(Help.class);
         commands.add(Status.class);
         commands.add(Ring.class);
+        commands.add(GetTimeout.class);
 
         return commands;
     }
