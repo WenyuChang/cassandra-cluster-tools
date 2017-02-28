@@ -81,7 +81,7 @@ import java.util.concurrent.TimeoutException;
 /**
  * JMX client operations for Cassandra.
  */
-public class NodeProbe implements AutoCloseable
+public class ClusterToolNodeProbe implements AutoCloseable
 {
     private static final String fmtUrl = "service:jmx:rmi:///jndi/rmi://[%s]:%d/jmxrmi";
     private static final String ssObjName = "org.apache.cassandra.db:type=StorageService";
@@ -115,7 +115,7 @@ public class NodeProbe implements AutoCloseable
      * @param port TCP port of the remote JMX agent
      * @throws IOException on connection failures
      */
-    public NodeProbe(String host, int port, String username, String password) throws IOException
+    public ClusterToolNodeProbe(String host, int port, String username, String password) throws IOException
     {
         assert username != null && !username.isEmpty() && password != null && !password.isEmpty()
                : "neither username nor password can be blank";
@@ -134,7 +134,7 @@ public class NodeProbe implements AutoCloseable
      * @param port TCP port of the remote JMX agent
      * @throws IOException on connection failures
      */
-    public NodeProbe(String host, int port) throws IOException
+    public ClusterToolNodeProbe(String host, int port) throws IOException
     {
         this.host = host;
         this.port = port;
@@ -147,7 +147,7 @@ public class NodeProbe implements AutoCloseable
      * @param host hostname or IP address of the JMX agent
      * @throws IOException on connection failures
      */
-    public NodeProbe(String host) throws IOException
+    public ClusterToolNodeProbe(String host) throws IOException
     {
         this.host = host;
         this.port = defaultPort;
@@ -259,9 +259,7 @@ public class NodeProbe implements AutoCloseable
 
     private void checkJobs(PrintStream out, int jobs)
     {
-        // TODO this should get the configured number of concurrent_compactors via JMX and not using DatabaseDescriptor
-        DatabaseDescriptor.toolInitialization();
-        if (jobs > DatabaseDescriptor.getConcurrentCompactors())
+        if (jobs > getConcurrentCompactors())
             out.println(String.format("jobs (%d) is bigger than configured concurrent_compactors (%d) on this host, using at most %d threads", jobs, DatabaseDescriptor.getConcurrentCompactors(), DatabaseDescriptor.getConcurrentCompactors()));
     }
 

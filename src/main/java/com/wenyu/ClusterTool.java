@@ -1,8 +1,6 @@
 package com.wenyu;
 
-import com.wenyu.clustertools.GetTimeout;
-import com.wenyu.clustertools.Ring;
-import com.wenyu.clustertools.Status;
+import com.wenyu.clustertools.*;
 import io.airlift.command.*;
 
 import java.util.ArrayList;
@@ -23,6 +21,12 @@ public class ClusterTool {
         commands.add(Status.class);
         commands.add(Ring.class);
         commands.add(GetTimeout.class);
+        commands.add(GetCompactionThroughput.class);
+        commands.add(GetCompactionThreshold.class);
+        commands.add(GetConcurrentCompactors.class);
+        commands.add(Flush.class);
+        commands.add(ClearSnapshot.class);
+        commands.add(Cleanup.class);
 
         return commands;
     }
