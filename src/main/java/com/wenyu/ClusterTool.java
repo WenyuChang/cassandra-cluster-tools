@@ -26,6 +26,7 @@ public class ClusterTool {
         commands.add(GetConcurrentCompactors.class);
         commands.add(Flush.class);
         commands.add(ClearSnapshot.class);
+        commands.add(Cleanup.class);
 
         return commands;
     }

@@ -23,7 +23,7 @@ import io.airlift.command.Arguments;
 import io.airlift.command.Command;
 import io.airlift.command.Option;
 import org.apache.cassandra.locator.EndpointSnitchInfoMBean;
-import org.apache.cassandra.tools.NodeProbe;
+import com.wenyu.utils.ClusterToolNodeProbe;;
 import org.apache.cassandra.tools.nodetool.HostStat;
 import org.apache.cassandra.tools.nodetool.SetHostStat;
 
@@ -45,7 +45,7 @@ public class Ring extends ClusterToolCmd {
 
     @Override
     public void execute() {
-        NodeProbe probe = getNodeProbe();
+        ClusterToolNodeProbe probe = getNodeProbe();
 
         Map<String, String> tokensToEndpoints = probe.getTokenToEndpointMap();
         LinkedHashMultimap<String, String> endpointsToTokens = LinkedHashMultimap.create();
@@ -93,15 +93,15 @@ public class Ring extends ClusterToolCmd {
         System.out.printf("%n  " + errors.toString());
     }
 
-    private NodeProbe getNodeProbe() {
+    private ClusterToolNodeProbe getNodeProbe() {
         int nodeCount = nodes.size();
         int randomNode = new Random().nextInt(nodeCount);
         Node nodeToBeConnect = nodes.get(randomNode);
-        NodeProbe nodeProbe = connect(nodeToBeConnect);
+        ClusterToolNodeProbe nodeProbe = connect(nodeToBeConnect);
         return nodeProbe;
     }
 
-    private void printDc(NodeProbe probe, String format,
+    private void printDc(ClusterToolNodeProbe probe, String format,
                          String dc,
                          LinkedHashMultimap<String, String> endpointsToTokens,
                          SetHostStat hoststats, boolean showEffectiveOwnership) {
@@ -164,7 +164,7 @@ public class Ring extends ClusterToolCmd {
         System.out.println();
     }
 
-    public static SortedMap<String, SetHostStat> getOwnershipByDc(NodeProbe probe, boolean resolveIp,
+    public static SortedMap<String, SetHostStat> getOwnershipByDc(ClusterToolNodeProbe probe, boolean resolveIp,
                                                                   Map<String, String> tokenToEndpoint,
                                                                   Map<InetAddress, Float> ownerships) {
         SortedMap<String, SetHostStat> ownershipByDc = Maps.newTreeMap();

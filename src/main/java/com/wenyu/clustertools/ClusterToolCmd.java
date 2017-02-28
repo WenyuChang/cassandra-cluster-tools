@@ -6,7 +6,7 @@ import static org.apache.commons.lang3.StringUtils.EMPTY;
 
 import com.google.common.base.Throwables;
 import io.airlift.command.*;
-import org.apache.cassandra.tools.NodeProbe;
+import com.wenyu.utils.ClusterToolNodeProbe;;
 import org.apache.commons.lang3.StringUtils;
 
 import java.io.File;
@@ -80,15 +80,15 @@ public abstract class ClusterToolCmd implements Runnable {
 
     public abstract void execute();
 
-    protected NodeProbe connect(Node node)
+    protected ClusterToolNodeProbe connect(Node node)
     {
-        NodeProbe nodeClient = null;
+        ClusterToolNodeProbe nodeClient = null;
 
         try {
             if (node.username.isEmpty())
-                nodeClient = new NodeProbe(node.server, parseInt(node.port));
+                nodeClient = new ClusterToolNodeProbe(node.server, parseInt(node.port));
             else
-                nodeClient = new NodeProbe(node.server, parseInt(node.port), node.username, node.password);
+                nodeClient = new ClusterToolNodeProbe(node.server, parseInt(node.port), node.username, node.password);
 
         } catch (IOException | SecurityException e) {
             Throwable rootCause = Throwables.getRootCause(e);

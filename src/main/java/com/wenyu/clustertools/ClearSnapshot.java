@@ -22,7 +22,7 @@ import com.wenyu.utils.Constants;
 import io.airlift.command.Arguments;
 import io.airlift.command.Command;
 import io.airlift.command.Option;
-import org.apache.cassandra.tools.NodeProbe;
+import com.wenyu.utils.ClusterToolNodeProbe;;
 import org.apache.cassandra.tools.NodeTool.NodeToolCmd;
 
 import java.io.IOException;
@@ -65,6 +65,7 @@ public class ClearSnapshot extends ClusterToolCmd
                 future.getValue().get(Constants.MAX_PARALLEL_WAIT_IN_SEC, TimeUnit.SECONDS);
             } catch (Exception ex) {
                 System.out.println(String.format("%s failed with error: %s", future.getKey().server, ex.toString()));
+                ex.printStackTrace();
             }
         }
     }
@@ -95,7 +96,7 @@ public class ClearSnapshot extends ClusterToolCmd
 
         @Override
         public Void execute() {
-            NodeProbe probe = connect(node);
+            ClusterToolNodeProbe probe = connect(node);
             try {
                 probe.clearSnapshot(snapshotName, toArray(keyspaces, String.class));
             } catch (IOException e) {

@@ -23,7 +23,7 @@ import com.wenyu.utils.Constants;
 import io.airlift.command.Command;
 import io.airlift.command.Option;
 import org.apache.cassandra.db.ColumnFamilyStoreMBean;
-import org.apache.cassandra.tools.NodeProbe;
+import com.wenyu.utils.ClusterToolNodeProbe;;
 import org.apache.cassandra.tools.NodeTool.NodeToolCmd;
 
 import java.util.HashMap;
@@ -56,6 +56,7 @@ public class GetConcurrentCompactors extends ClusterToolCmd
                 System.out.println(future.getValue().get(Constants.MAX_PARALLEL_WAIT_IN_SEC, TimeUnit.SECONDS));
             } catch (Exception ex) {
                 System.out.println(String.format("%s failed with error: %s", future.getKey().server, ex.toString()));
+                ex.printStackTrace();
             }
         }
     }
@@ -70,7 +71,7 @@ public class GetConcurrentCompactors extends ClusterToolCmd
         @Override
         public String execute()
         {
-            NodeProbe probe = connect(node);
+            ClusterToolNodeProbe probe = connect(node);
 
             String result = "Current " + node.server + "'s concurrent compactors in the system is: " + probe.getConcurrentCompactors();
             return result;

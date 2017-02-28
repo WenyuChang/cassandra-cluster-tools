@@ -21,7 +21,7 @@ import com.wenyu.utils.AsyncTask;
 import com.wenyu.utils.Constants;
 import io.airlift.command.Command;
 import io.airlift.command.Option;
-import org.apache.cassandra.tools.NodeProbe;
+import com.wenyu.utils.ClusterToolNodeProbe;;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -48,6 +48,7 @@ public class GetCompactionThroughput extends ClusterToolCmd
                 System.out.println(future.getValue().get(Constants.MAX_PARALLEL_WAIT_IN_SEC, TimeUnit.SECONDS));
             } catch (Exception ex) {
                 System.out.println(String.format("%s failed with error: %s", future.getKey().server, ex.toString()));
+                ex.printStackTrace();
             }
         }
     }
@@ -61,7 +62,7 @@ public class GetCompactionThroughput extends ClusterToolCmd
 
         @Override
         public String execute() {
-            NodeProbe probe = connect(node);
+            ClusterToolNodeProbe probe = connect(node);
 
             try {
                 String template = "Current %s's compaction throughput: %s MB/s";

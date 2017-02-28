@@ -17,24 +17,34 @@
  */
 package com.wenyu.clustertools;
 
-import com.wenyu.utils.*;
+import com.wenyu.utils.AsyncTask;
+import com.wenyu.utils.Constants;
+import com.wenyu.utils.KeyspaceSet;
+import com.wenyu.utils.Utilities;
 import io.airlift.command.Arguments;
 import io.airlift.command.Command;
 import io.airlift.command.Option;
+import org.apache.cassandra.config.SchemaConstants;
+import com.wenyu.utils.ClusterToolNodeProbe;;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
-import static com.google.common.collect.Iterables.toArray;
-import static org.apache.commons.lang3.ArrayUtils.EMPTY_STRING_ARRAY;
-
-@Command(name = "flush", description = "Flush one or more tables")
-public class Flush extends ClusterToolCmd {
+@Command(name = "cleanup", description = "Triggers the immediate cleanup of keys no longer belonging to a node. By default, clean all keyspaces")
+public class Cleanup extends ClusterToolCmd {
     @Arguments(usage = "[<keyspace> <tables>...]", description = "The keyspace followed by one or many tables")
     private List<String> args = new ArrayList<>();
+
+    @Option(title = "jobs",
+            name = {"-j", "--jobs"},
+            description = "Number of sstables to cleanup simultanously, set to 0 to use all available compaction threads")
+    private int jobs = 2;
 
     @Option(title = "parallel executor", name = {"-p", "--par-jobs"}, description = "Number of threads to get timeout of all nodes.")
     private int parallel = 1;
@@ -67,7 +77,7 @@ public class Flush extends ClusterToolCmd {
 
         @Override
         public boolean preExecute() {
-            System.out.println("Start to flush " + node.server);
+            System.out.println("Start to do cleanup on " + node.server);
             return true;
         }
 
@@ -75,14 +85,17 @@ public class Flush extends ClusterToolCmd {
         public Void execute() {
             ClusterToolNodeProbe probe = connect(node);
 
-            List<String> keyspaces = Utilities.parseOptionalKeyspace(args, probe, KeyspaceSet.NON_SYSTEM);
+            List<String> keyspaces = Utilities.parseOptionalKeyspace(args, probe, KeyspaceSet.NON_LOCAL_STRATEGY);
             String[] tableNames = Utilities.parseOptionalTables(args);
 
             for (String keyspace : keyspaces) {
+                if (SchemaConstants.isSystemKeyspace(keyspace))
+                    continue;
+
                 try {
-                    probe.forceKeyspaceFlush(keyspace, tableNames);
+                    probe.forceKeyspaceCleanup(System.out, jobs, keyspace, tableNames);
                 } catch (Exception e) {
-                    throw new RuntimeException("Error occurred during flushing", e);
+                    throw new RuntimeException("Error occurred during cleanup", e);
                 }
             }
 
@@ -91,7 +104,7 @@ public class Flush extends ClusterToolCmd {
 
         @Override
         public boolean postExecute() {
-            System.out.println("Finish flushing " + node.server);
+            System.out.println("Finish cleanup on " + node.server);
             return true;
         }
     }

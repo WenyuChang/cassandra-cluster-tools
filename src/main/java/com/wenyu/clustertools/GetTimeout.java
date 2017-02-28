@@ -22,7 +22,7 @@ import com.wenyu.utils.Constants;
 import io.airlift.command.Arguments;
 import io.airlift.command.Command;
 import io.airlift.command.Option;
-import org.apache.cassandra.tools.NodeProbe;
+import com.wenyu.utils.ClusterToolNodeProbe;;
 
 import java.util.*;
 import java.util.concurrent.*;
@@ -54,6 +54,7 @@ public class GetTimeout extends ClusterToolCmd {
                 System.out.println(future.getValue().get(Constants.MAX_PARALLEL_WAIT_IN_SEC, TimeUnit.SECONDS));
             } catch (Exception ex) {
                 System.out.println(String.format("%s failed with error: %s", future.getKey().server, ex.toString()));
+                ex.printStackTrace();
             }
         }
     }
@@ -67,7 +68,7 @@ public class GetTimeout extends ClusterToolCmd {
 
         @Override
         public String execute() {
-            NodeProbe probe = connect(node);
+            ClusterToolNodeProbe probe = connect(node);
 
             try {
                 checkArgument(args.size() == 1, "gettimeout requires a timeout type, one of (" + TIMEOUT_TYPES + ")");

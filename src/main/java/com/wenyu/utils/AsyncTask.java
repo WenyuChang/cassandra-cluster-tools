@@ -16,10 +16,14 @@ public abstract class AsyncTask<T> implements Callable<T> {
         return true;
     }
 
-    public T call() {
-        preExecute();
-        T result = execute();
-        postExecute();
-        return result;
+    public T call() throws Exception {
+        try {
+            preExecute();
+            T result = execute();
+            postExecute();
+            return result;
+        } catch (Throwable ex) {
+            throw new Exception(ex.toString());
+        }
     }
 }

@@ -23,7 +23,7 @@ import io.airlift.command.Arguments;
 import io.airlift.command.Command;
 import io.airlift.command.Option;
 import org.apache.cassandra.db.ColumnFamilyStoreMBean;
-import org.apache.cassandra.tools.NodeProbe;
+import com.wenyu.utils.ClusterToolNodeProbe;;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -60,6 +60,7 @@ public class GetCompactionThreshold extends ClusterToolCmd
                 System.out.println(future.getValue().get(Constants.MAX_PARALLEL_WAIT_IN_SEC, TimeUnit.SECONDS));
             } catch (Exception ex) {
                 System.out.println(String.format("%s failed with error: %s", future.getKey().server, ex.toString()));
+                ex.printStackTrace();
             }
         }
     }
@@ -78,7 +79,7 @@ public class GetCompactionThreshold extends ClusterToolCmd
             String ks = args.get(0);
             String cf = args.get(1);
 
-            NodeProbe probe = connect(node);
+            ClusterToolNodeProbe probe = connect(node);
             ColumnFamilyStoreMBean cfsProxy = probe.getCfsProxy(ks, cf);
             String result = "Current " + node.server + "'s compaction thresholds for " + ks + "/" + cf + ": " +
                     " min = " + cfsProxy.getMinimumCompactionThreshold() + ", " +
