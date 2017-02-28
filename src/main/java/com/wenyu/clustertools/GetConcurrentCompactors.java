@@ -15,41 +15,43 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.wenyu.clustertools;
 
 import com.wenyu.utils.AsyncTask;
 import com.wenyu.utils.Constants;
-import io.airlift.command.Arguments;
 import io.airlift.command.Command;
 import io.airlift.command.Option;
+import org.apache.cassandra.db.ColumnFamilyStoreMBean;
 import org.apache.cassandra.tools.NodeProbe;
+import org.apache.cassandra.tools.NodeTool.NodeToolCmd;
 
-import java.util.*;
-import java.util.concurrent.*;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 
 import static com.google.common.base.Preconditions.checkArgument;
 
-@Command(name = "gettimeout", description = "Print the timeout of the given type in ms")
-public class GetTimeout extends ClusterToolCmd {
-    public static final String TIMEOUT_TYPES = "read, range, write, counterwrite, cascontention, truncate, streamingsocket, misc (general rpc_timeout_in_ms)";
-
-    @Arguments(usage = "<timeout_type>", description = "The timeout type, one of (" + TIMEOUT_TYPES + ")")
-    private List<String> args = new ArrayList<>();
-
-
+@Command(name = "getconcurrentcompactors", description = "Get the number of concurrent compactors in the system.")
+public class GetConcurrentCompactors extends ClusterToolCmd
+{
     @Option(title = "parallel executor", name = {"-p", "--par-jobs"}, description = "Number of threads to get timeout of all nodes.")
     private int parallel = 1;
 
     @Override
-    public void execute() {
+    public void execute()
+    {
         ExecutorService executor = Executors.newFixedThreadPool(parallel);
 
         Map<Node, Future<String>> futures = new HashMap<>();
-        for (Node node : nodes) {
+        for (ClusterToolCmd.Node node : nodes) {
             futures.put(node, executor.submit(new Executor(node)));
         }
 
-        for (Map.Entry<Node, Future<String>> future : futures.entrySet()) {
+        for (Map.Entry<ClusterToolCmd.Node, Future<String>> future : futures.entrySet()) {
             try {
                 System.out.println(future.getValue().get(Constants.MAX_PARALLEL_WAIT_IN_SEC, TimeUnit.SECONDS));
             } catch (Exception ex) {
@@ -66,19 +68,12 @@ public class GetTimeout extends ClusterToolCmd {
         }
 
         @Override
-        public String execute() {
+        public String execute()
+        {
             NodeProbe probe = connect(node);
 
-            try {
-                checkArgument(args.size() == 1, "gettimeout requires a timeout type, one of (" + TIMEOUT_TYPES + ")");
-
-                String template = "%s's timeout for type %s: %s ms";
-                String result = String.format(template, node.server, args.get(0), probe.getTimeout(args.get(0)));
-                return result;
-            } catch (Exception e) {
-                String error = String.format("%s failed with error: %s", node.server, e.toString());
-                return error;
-            }
+            String result = "Current " + node.server + "'s concurrent compactors in the system is: " + probe.getConcurrentCompactors();
+            return result;
         }
     }
 }

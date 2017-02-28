@@ -19,29 +19,23 @@ package com.wenyu.clustertools;
 
 import com.wenyu.utils.AsyncTask;
 import com.wenyu.utils.Constants;
-import io.airlift.command.Arguments;
 import io.airlift.command.Command;
 import io.airlift.command.Option;
 import org.apache.cassandra.tools.NodeProbe;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.*;
 
-import static com.google.common.base.Preconditions.checkArgument;
-
-@Command(name = "gettimeout", description = "Print the timeout of the given type in ms")
-public class GetTimeout extends ClusterToolCmd {
-    public static final String TIMEOUT_TYPES = "read, range, write, counterwrite, cascontention, truncate, streamingsocket, misc (general rpc_timeout_in_ms)";
-
-    @Arguments(usage = "<timeout_type>", description = "The timeout type, one of (" + TIMEOUT_TYPES + ")")
-    private List<String> args = new ArrayList<>();
-
-
+@Command(name = "getcompactionthroughput", description = "Print the MB/s throughput cap for compaction in the system")
+public class GetCompactionThroughput extends ClusterToolCmd
+{
     @Option(title = "parallel executor", name = {"-p", "--par-jobs"}, description = "Number of threads to get timeout of all nodes.")
     private int parallel = 1;
 
     @Override
-    public void execute() {
+    public void execute()
+    {
         ExecutorService executor = Executors.newFixedThreadPool(parallel);
 
         Map<Node, Future<String>> futures = new HashMap<>();
@@ -70,10 +64,8 @@ public class GetTimeout extends ClusterToolCmd {
             NodeProbe probe = connect(node);
 
             try {
-                checkArgument(args.size() == 1, "gettimeout requires a timeout type, one of (" + TIMEOUT_TYPES + ")");
-
-                String template = "%s's timeout for type %s: %s ms";
-                String result = String.format(template, node.server, args.get(0), probe.getTimeout(args.get(0)));
+                String template = "Current %s's compaction throughput: %s MB/s";
+                String result = String.format(template, node.server, probe.getCompactionThroughput());
                 return result;
             } catch (Exception e) {
                 String error = String.format("%s failed with error: %s", node.server, e.toString());
