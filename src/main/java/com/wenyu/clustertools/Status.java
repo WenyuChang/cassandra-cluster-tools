@@ -19,11 +19,11 @@ package com.wenyu.clustertools;
 
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.Maps;
+import com.wenyu.utils.ClusterToolNodeProbe;;
 import io.airlift.command.Arguments;
 import io.airlift.command.Command;
 import io.airlift.command.Option;
 import org.apache.cassandra.locator.EndpointSnitchInfoMBean;
-import org.apache.cassandra.tools.NodeProbe;
 import org.apache.cassandra.tools.nodetool.HostStat;
 import org.apache.cassandra.tools.nodetool.SetHostStat;
 
@@ -49,7 +49,7 @@ public class Status extends ClusterToolCmd {
 
     @Override
     public void execute() {
-        NodeProbe probe = getNodeProbe();
+        ClusterToolNodeProbe probe = getNodeProbe();
 
         joiningNodes = probe.getJoiningNodes();
         leavingNodes = probe.getLeavingNodes();
@@ -111,11 +111,11 @@ public class Status extends ClusterToolCmd {
         System.out.printf("%n" + errors.toString());
     }
 
-    private NodeProbe getNodeProbe() {
+    private ClusterToolNodeProbe getNodeProbe() {
         int nodeCount = nodes.size();
         int randomNode = new Random().nextInt(nodeCount);
         Node nodeToBeConnect = nodes.get(randomNode);
-        NodeProbe nodeProbe = connect(nodeToBeConnect);
+        ClusterToolNodeProbe nodeProbe = connect(nodeToBeConnect);
         return nodeProbe;
     }
 
@@ -192,7 +192,7 @@ public class Status extends ClusterToolCmd {
         return format;
     }
 
-    public static SortedMap<String, SetHostStat> getOwnershipByDc(NodeProbe probe, boolean resolveIp,
+    public static SortedMap<String, SetHostStat> getOwnershipByDc(ClusterToolNodeProbe probe, boolean resolveIp,
                                                                   Map<String, String> tokenToEndpoint,
                                                                   Map<InetAddress, Float> ownerships) {
         SortedMap<String, SetHostStat> ownershipByDc = Maps.newTreeMap();
