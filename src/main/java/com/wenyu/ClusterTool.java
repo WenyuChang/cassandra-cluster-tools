@@ -28,6 +28,12 @@ public class ClusterTool {
         commands.add(ClearSnapshot.class);
         commands.add(Cleanup.class);
 
+        commands.add(Drain.class);
+        commands.add(GarbageCollect.class);
+        commands.add(Snapshot.class);
+        commands.add(SetLoggingLevel.class);
+        commands.add(GetLoggingLevels.class);
+
         return commands;
     }
 
