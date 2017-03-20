@@ -41,15 +41,12 @@ public class GetLoggingLevels extends ClusterToolCmd
     public void execute() {
         ExecutorService executor = Executors.newFixedThreadPool(parallel);
 
-        System.out.println("BBBBBBBBBBBBB");
         Map<ClusterToolCmd.Node, Future<String>> futures = new HashMap<>();
         for (ClusterToolCmd.Node node : nodes) {
             futures.put(node, executor.submit(new Executor(node)));
         }
-        System.out.println("AAAAAAAAAA");
         for (Map.Entry<ClusterToolCmd.Node, Future<String>> future : futures.entrySet()) {
             try {
-                System.out.println("CCCCCCCCC");
                 System.out.println(future.getValue().get(Constants.MAX_PARALLEL_WAIT_IN_SEC, TimeUnit.SECONDS));
             } catch (Exception ex) {
                 System.out.println(String.format("%s failed with error: %s", future.getKey().server, ex.toString()));
