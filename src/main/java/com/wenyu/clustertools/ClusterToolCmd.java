@@ -82,12 +82,12 @@ public abstract class ClusterToolCmd implements Runnable {
     }
 
     public void run() {
-        parseNodesConnectionFile();
-        if (nodes == null || nodes.size() <= 0) {
-            return;
-        }
-
         try {
+            parseNodesConnectionFile();
+            if (nodes == null || nodes.size() <= 0) {
+                return;
+            }
+
             execute();
         } catch (Throwable e) {
             e.printStackTrace();
