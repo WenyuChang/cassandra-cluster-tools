@@ -42,6 +42,7 @@ public class GetTimeout extends ClusterToolCmd {
 
     @Override
     public void execute() {
+        checkArgument(args.size() == 1, "gettimeout requires a timeout type, one of (" + TIMEOUT_TYPES + ")");
         ExecutorService executor = Executors.newFixedThreadPool(parallel);
 
         Map<Node, Future<String>> futures = new HashMap<>();
@@ -71,8 +72,6 @@ public class GetTimeout extends ClusterToolCmd {
             ClusterToolNodeProbe probe = connect(node);
 
             try {
-                checkArgument(args.size() == 1, "gettimeout requires a timeout type, one of (" + TIMEOUT_TYPES + ")");
-
                 String template = "%s's timeout for type %s: %s ms";
                 String result = String.format(template, node.server, args.get(0), probe.getTimeout(args.get(0)));
                 return result;

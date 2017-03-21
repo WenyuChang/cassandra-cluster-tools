@@ -12,9 +12,9 @@ import org.apache.commons.lang3.StringUtils;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Scanner;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
+import java.util.*;
 
 /**
  * Created by wenyu on 2/24/17.
@@ -35,6 +35,8 @@ public abstract class ClusterToolCmd implements Runnable {
         }
 
         try {
+            Set<InetAddress> nodeSet = new HashSet<>();
+
             File nodesFile = new File(nodesConnectionFile);
             Scanner scanner = new Scanner(nodesFile).useDelimiter(System.lineSeparator());
             while (scanner.hasNext())
@@ -48,6 +50,13 @@ public abstract class ClusterToolCmd implements Runnable {
 
                 // Make sure server information is correctly formatted
                 assert serverRole.length() > 0;
+
+                InetAddress add = InetAddress.getByName(serverRole.split(":")[0]);
+                if (nodeSet.contains(add)) {
+                    continue;
+                } else {
+                    nodeSet.add(add);
+                }
 
                 Node node = new Node();
                 node.server = serverRole.split(":")[0];
@@ -66,16 +75,23 @@ public abstract class ClusterToolCmd implements Runnable {
             throw new RuntimeException(e);
         } catch (AssertionError e) {
             throw e;
+        } catch (UnknownHostException e) {
+            // TODO Unknow Host Exception handling
+            e.printStackTrace();
         }
     }
 
     public void run() {
-        parseNodesConnectionFile();
-        if (nodes == null || nodes.size() <= 0) {
-            return;
-        }
+        try {
+            parseNodesConnectionFile();
+            if (nodes == null || nodes.size() <= 0) {
+                return;
+            }
 
-        execute();
+            execute();
+        } catch (Throwable e) {
+            e.printStackTrace();
+        }
     }
 
     public abstract void execute();

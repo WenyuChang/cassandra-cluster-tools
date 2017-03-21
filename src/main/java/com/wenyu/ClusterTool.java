@@ -34,6 +34,13 @@ public class ClusterTool {
         commands.add(SetLoggingLevel.class);
         commands.add(GetLoggingLevels.class);
 
+        commands.add(CompactPartition.class);
+        commands.add(GetEndpoints.class);
+        commands.add(GetSSTables.class);
+        commands.add(Version.class);
+        commands.add(EnableAutoCompaction.class);
+        commands.add(DisableAutoCompaction.class);
+
         return commands;
     }
 
@@ -61,9 +68,11 @@ public class ClusterTool {
                 ParseCommandUnrecognizedException e)
         {
             status = 1;
+            e.printStackTrace();
         } catch (Throwable throwable)
         {
             status = 2;
+            throwable.printStackTrace();
         }
 
         System.exit(status);
