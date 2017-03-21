@@ -35,6 +35,8 @@ public class ClusterTool {
         commands.add(GetLoggingLevels.class);
 
         commands.add(CompactPartition.class);
+        commands.add(GetEndpoints.class);
+        commands.add(GetSSTables.class);
 
         return commands;
     }
