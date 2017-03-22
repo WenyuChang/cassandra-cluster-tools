@@ -76,12 +76,6 @@ public class Cleanup extends ClusterToolCmd {
         }
 
         @Override
-        public boolean preExecute() {
-            System.out.println("Start to do cleanup on " + node.server);
-            return true;
-        }
-
-        @Override
         public Void execute() {
             ClusterToolNodeProbe probe = connect(node);
 
@@ -104,7 +98,7 @@ public class Cleanup extends ClusterToolCmd {
 
         @Override
         public boolean postExecute() {
-            System.out.println("Finish cleanup on " + node.server);
+            System.out.println("Finished cleanup on " + node.server);
             return true;
         }
     }

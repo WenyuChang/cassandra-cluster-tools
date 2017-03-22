@@ -78,23 +78,6 @@ public class ClearSnapshot extends ClusterToolCmd
         }
 
         @Override
-        public boolean preExecute() {
-            StringBuilder sb = new StringBuilder();
-            sb.append("Requested clearing snapshot(s) for ");
-
-            if (keyspaces.isEmpty())
-                sb.append("[all keyspaces]");
-            else
-                sb.append("[").append(join(keyspaces, ", ")).append("]");
-
-            if (!snapshotName.isEmpty())
-                sb.append(" with snapshot name [").append(snapshotName).append("]");
-
-            System.out.println(sb.toString());
-            return true;
-        }
-
-        @Override
         public Void execute() {
             ClusterToolNodeProbe probe = connect(node);
             try {
@@ -107,7 +90,18 @@ public class ClearSnapshot extends ClusterToolCmd
 
         @Override
         public boolean postExecute() {
-            System.out.println("Finish flushing " + node.server);
+            StringBuilder sb = new StringBuilder();
+            sb.append("Finished clearing snapshot(s) on " + node.server + " for ");
+
+            if (keyspaces.isEmpty())
+                sb.append("[all keyspaces]");
+            else
+                sb.append("[").append(join(keyspaces, ", ")).append("]");
+
+            if (!snapshotName.isEmpty())
+                sb.append(" with snapshot name [").append(snapshotName).append("]");
+
+            System.out.println(sb.toString());
             return true;
         }
     }

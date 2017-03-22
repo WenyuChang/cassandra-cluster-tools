@@ -19,6 +19,7 @@ package com.wenyu.clustertools;
 
 import com.wenyu.utils.AsyncTask;
 import com.wenyu.utils.Constants;
+import com.wenyu.utils.TableGenerator;
 import io.airlift.command.Arguments;
 import io.airlift.command.Command;
 import io.airlift.command.Option;
@@ -37,8 +38,7 @@ import java.util.concurrent.TimeUnit;
 import static com.google.common.base.Preconditions.checkArgument;
 
 @Command(name = "getcompactionthreshold", description = "Print min and max compaction thresholds for a given table")
-public class GetCompactionThreshold extends ClusterToolCmd
-{
+public class GetCompactionThreshold extends ClusterToolCmd {
     @Arguments(usage = "<keyspace> <table>", description = "The keyspace with a table")
     private List<String> args = new ArrayList<>();
 
@@ -46,26 +46,36 @@ public class GetCompactionThreshold extends ClusterToolCmd
     private int parallel = 1;
 
     @Override
-    public void execute()
-    {
+    public void execute() {
+        checkArgument(args.size() == 2, "getcompactionthreshold requires ks and cf args");
+
         ExecutorService executor = Executors.newFixedThreadPool(parallel);
 
-        Map<ClusterToolCmd.Node, Future<String>> futures = new HashMap<>();
+        Map<ClusterToolCmd.Node, Future<List<String>>> futures = new HashMap<>();
         for (ClusterToolCmd.Node node : nodes) {
             futures.put(node, executor.submit(new Executor(node)));
         }
 
-        for (Map.Entry<ClusterToolCmd.Node, Future<String>> future : futures.entrySet()) {
+        List<String> header = new ArrayList<String>() {{
+            add("SERVER/KS:CF");
+            add("MIN");
+            add("MAX");
+        }};
+
+        List<List<String>> rows = new ArrayList<>();
+        for (Map.Entry<ClusterToolCmd.Node, Future<List<String>>> future : futures.entrySet()) {
             try {
-                System.out.println(future.getValue().get(Constants.MAX_PARALLEL_WAIT_IN_SEC, TimeUnit.SECONDS));
+                rows.add(future.getValue().get(Constants.MAX_PARALLEL_WAIT_IN_SEC, TimeUnit.SECONDS));
             } catch (Exception ex) {
                 System.out.println(String.format("%s failed with error: %s", future.getKey().server, ex.toString()));
                 ex.printStackTrace();
             }
         }
+
+        System.out.println(TableGenerator.generateTable(header, rows));
     }
 
-    private class Executor extends AsyncTask<String> {
+    private class Executor extends AsyncTask<List<String>> {
         private Node node;
 
         public Executor(Node node) {
@@ -73,17 +83,18 @@ public class GetCompactionThreshold extends ClusterToolCmd
         }
 
         @Override
-        public String execute()
-        {
-            checkArgument(args.size() == 2, "getcompactionthreshold requires ks and cf args");
-            String ks = args.get(0);
-            String cf = args.get(1);
+        public List<String> execute() {
+            final String ks = args.get(0);
+            final String cf = args.get(1);
+
+            List<String> result = new ArrayList<String>() {{
+               add(node.server + "/" + ks + ":" + cf);
+            }};
 
             ClusterToolNodeProbe probe = connect(node);
             ColumnFamilyStoreMBean cfsProxy = probe.getCfsProxy(ks, cf);
-            String result = "Current " + node.server + "'s compaction thresholds for " + ks + "/" + cf + ": " +
-                    " min = " + cfsProxy.getMinimumCompactionThreshold() + ", " +
-                    " max = " + cfsProxy.getMaximumCompactionThreshold();
+            result.add(String.valueOf(cfsProxy.getMinimumCompactionThreshold()));
+            result.add(String.valueOf(cfsProxy.getMaximumCompactionThreshold()));
             return result;
         }
     }

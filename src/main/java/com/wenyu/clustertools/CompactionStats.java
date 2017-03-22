@@ -20,6 +20,7 @@ package com.wenyu.clustertools;
 import com.wenyu.utils.AsyncTask;
 import com.wenyu.utils.ClusterToolNodeProbe;
 import com.wenyu.utils.Constants;
+import com.wenyu.utils.OutTextStyle;
 import io.airlift.command.Command;
 import io.airlift.command.Option;
 import org.apache.cassandra.db.compaction.CompactionManagerMBean;
@@ -46,11 +47,6 @@ import static java.lang.String.format;
 
 @Command(name = "compactionstats", description = "Print statistics on compactions")
 public class CompactionStats extends ClusterToolCmd {
-    @Option(title = "human_readable",
-            name = {"-H", "--human-readable"},
-            description = "Display bytes in human readable form, i.e. KiB, MiB, GiB, TiB")
-    private boolean humanReadable = false;
-
     @Option(title = "parallel executor", name = {"-p", "--par-jobs"}, description = "Number of threads to get timeout of all nodes.")
     private int parallel = 1;
 
@@ -72,14 +68,6 @@ public class CompactionStats extends ClusterToolCmd {
         }
     }
 
-    private ClusterToolNodeProbe getNodeProbe() {
-        int nodeCount = nodes.size();
-        int randomNode = new Random().nextInt(nodeCount);
-        Node nodeToBeConnect = nodes.get(randomNode);
-        ClusterToolNodeProbe nodeProbe = connect(nodeToBeConnect);
-        return nodeProbe;
-    }
-
     private class Executor extends AsyncTask<String> {
         private ClusterToolCmd.Node node;
 
@@ -98,7 +86,7 @@ public class CompactionStats extends ClusterToolCmd {
                     numTotalPendingTask += tableEntry.getValue();
             }
 
-            StringBuilder builder = new StringBuilder(node.server + ": pending tasks: " + numTotalPendingTask);
+            StringBuilder builder = new StringBuilder(OutTextStyle.ANSI_RED + "Pending on " + node.server + ": " + OutTextStyle.ANSI_RESET + numTotalPendingTask);
             for (Entry<String, Map<String, Integer>> ksEntry : pendingTaskNumberByTable.entrySet()) {
                 String ksName = ksEntry.getKey();
                 for (Entry<String, Integer> tableEntry : ksEntry.getValue().entrySet()) {

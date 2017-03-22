@@ -66,12 +66,6 @@ public class Flush extends ClusterToolCmd {
         }
 
         @Override
-        public boolean preExecute() {
-            System.out.println("Start to flush " + node.server);
-            return true;
-        }
-
-        @Override
         public Void execute() {
             ClusterToolNodeProbe probe = connect(node);
 
@@ -91,7 +85,7 @@ public class Flush extends ClusterToolCmd {
 
         @Override
         public boolean postExecute() {
-            System.out.println("Finish flushing " + node.server);
+            System.out.println("Finish flushing on" + node.server);
             return true;
         }
     }

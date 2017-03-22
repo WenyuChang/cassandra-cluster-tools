@@ -19,11 +19,14 @@ package com.wenyu.clustertools;
 
 import com.wenyu.utils.AsyncTask;
 import com.wenyu.utils.Constants;
+import com.wenyu.utils.TableGenerator;
 import io.airlift.command.Command;
 import io.airlift.command.Option;
 import com.wenyu.utils.ClusterToolNodeProbe;;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.*;
 
@@ -34,26 +37,33 @@ public class GetCompactionThroughput extends ClusterToolCmd
     private int parallel = 1;
 
     @Override
-    public void execute()
-    {
+    public void execute() {
         ExecutorService executor = Executors.newFixedThreadPool(parallel);
 
-        Map<Node, Future<String>> futures = new HashMap<>();
+        Map<Node, Future<List<String>>> futures = new HashMap<>();
         for (Node node : nodes) {
             futures.put(node, executor.submit(new Executor(node)));
         }
 
-        for (Map.Entry<Node, Future<String>> future : futures.entrySet()) {
+        List<String> header = new ArrayList<String>() {{
+            add("Server");
+            add("Compaction Throughput");
+        }};
+
+        List<List<String>> rows = new ArrayList<>();
+        for (Map.Entry<Node, Future<List<String>>> future : futures.entrySet()) {
             try {
-                System.out.println(future.getValue().get(Constants.MAX_PARALLEL_WAIT_IN_SEC, TimeUnit.SECONDS));
+                rows.add(future.getValue().get(Constants.MAX_PARALLEL_WAIT_IN_SEC, TimeUnit.SECONDS));
             } catch (Exception ex) {
                 System.out.println(String.format("%s failed with error: %s", future.getKey().server, ex.toString()));
                 ex.printStackTrace();
             }
         }
+
+        System.out.println(TableGenerator.generateTable(header, rows));
     }
 
-    private class Executor extends AsyncTask<String> {
+    private class Executor extends AsyncTask<List<String>> {
         private Node node;
 
         public Executor(Node node) {
@@ -61,16 +71,16 @@ public class GetCompactionThroughput extends ClusterToolCmd
         }
 
         @Override
-        public String execute() {
+        public List<String> execute() {
             ClusterToolNodeProbe probe = connect(node);
 
             try {
-                String template = "Current %s's compaction throughput: %s MB/s";
-                String result = String.format(template, node.server, probe.getCompactionThroughput());
+                List<String> result = new ArrayList<>();
+                result.add(node.server);
+                result.add(probe.getCompactionThroughput() + " MB/s");
                 return result;
             } catch (Exception e) {
-                String error = String.format("%s failed with error: %s", node.server, e.toString());
-                return error;
+                throw e;
             }
         }
     }

@@ -23,6 +23,7 @@ import io.airlift.command.Option;
 import org.apache.cassandra.tools.NodeProbe;
 import org.apache.cassandra.tools.NodeTool.NodeToolCmd;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -41,21 +42,30 @@ public class GetLoggingLevels extends ClusterToolCmd
     public void execute() {
         ExecutorService executor = Executors.newFixedThreadPool(parallel);
 
-        Map<ClusterToolCmd.Node, Future<String>> futures = new HashMap<>();
+        Map<ClusterToolCmd.Node, Future<List<List<String>>>> futures = new HashMap<>();
         for (ClusterToolCmd.Node node : nodes) {
             futures.put(node, executor.submit(new Executor(node)));
         }
-        for (Map.Entry<ClusterToolCmd.Node, Future<String>> future : futures.entrySet()) {
+
+        List<String> header = new ArrayList<String>() {{
+            add("Server");
+            add("Package");
+            add("Level");
+        }};
+
+        List<List<String>> rows = new ArrayList<>();
+        for (Map.Entry<ClusterToolCmd.Node, Future<List<List<String>>>> future : futures.entrySet()) {
             try {
-                System.out.println(future.getValue().get(Constants.MAX_PARALLEL_WAIT_IN_SEC, TimeUnit.SECONDS));
+                rows.addAll(future.getValue().get(Constants.MAX_PARALLEL_WAIT_IN_SEC, TimeUnit.SECONDS));
             } catch (Exception ex) {
                 System.out.println(String.format("%s failed with error: %s", future.getKey().server, ex.toString()));
                 ex.printStackTrace();
             }
         }
+        System.out.println(TableGenerator.generateTable(header, rows));
     }
 
-    private class Executor extends AsyncTask<String> {
+    private class Executor extends AsyncTask<List<List<String>>> {
         private ClusterToolCmd.Node node;
 
         public Executor(ClusterToolCmd.Node node) {
@@ -63,13 +73,19 @@ public class GetLoggingLevels extends ClusterToolCmd
         }
 
         @Override
-        public String execute() {
+        public List<List<String>> execute() {
             ClusterToolNodeProbe probe = connect(node);
 
             // what if some one set a very long logger name? 50 space may not be enough...
-            String result = "";
-            for (Map.Entry<String, String> entry : probe.getLoggingLevels().entrySet())
-                result += String.format("%s:%-50s%10s%n", node.server, entry.getKey(), entry.getValue());
+            List<List<String>> result = new ArrayList<>();
+            for (final Map.Entry<String, String> entry : probe.getLoggingLevels().entrySet()) {
+                List<String> row = new ArrayList<String>() {{
+                    add(node.server);
+                    add(entry.getKey());
+                    add(entry.getValue());
+                }};
+                result.add(row);
+            }
             return result;
         }
     }
