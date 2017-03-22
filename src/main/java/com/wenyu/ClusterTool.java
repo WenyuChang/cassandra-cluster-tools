@@ -44,6 +44,7 @@ public class ClusterTool {
         commands.add(CompactionStats.class);
         commands.add(DescribeCluster.class);
         commands.add(GcStats.class);
+        commands.add(GetStreamThroughput.class);
 
         return commands;
     }
