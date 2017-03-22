@@ -19,6 +19,7 @@ package com.wenyu.clustertools;
 
 import com.wenyu.utils.AsyncTask;
 import com.wenyu.utils.Constants;
+import com.wenyu.utils.TableGenerator;
 import io.airlift.command.Arguments;
 import io.airlift.command.Command;
 import io.airlift.command.Option;
@@ -45,22 +46,29 @@ public class GetTimeout extends ClusterToolCmd {
         checkArgument(args.size() == 1, "gettimeout requires a timeout type, one of (" + TIMEOUT_TYPES + ")");
         ExecutorService executor = Executors.newFixedThreadPool(parallel);
 
-        Map<Node, Future<String>> futures = new HashMap<>();
+        Map<Node, Future<List<String>>> futures = new HashMap<>();
         for (Node node : nodes) {
             futures.put(node, executor.submit(new Executor(node)));
         }
 
-        for (Map.Entry<Node, Future<String>> future : futures.entrySet()) {
+        List<String> header = new ArrayList<String>() {{
+            add("Server");
+            add(args.get(0) + "'s Timeout");
+        }};
+
+        List<List<String>> rows = new ArrayList<>();
+        for (Map.Entry<Node, Future<List<String>>> future : futures.entrySet()) {
             try {
-                System.out.println(future.getValue().get(Constants.MAX_PARALLEL_WAIT_IN_SEC, TimeUnit.SECONDS));
+                rows.add(future.getValue().get(Constants.MAX_PARALLEL_WAIT_IN_SEC, TimeUnit.SECONDS));
             } catch (Exception ex) {
                 System.out.println(String.format("%s failed with error: %s", future.getKey().server, ex.toString()));
                 ex.printStackTrace();
             }
         }
+        System.out.println(TableGenerator.generateTable(header, rows));
     }
 
-    private class Executor extends AsyncTask<String> {
+    private class Executor extends AsyncTask<List<String>> {
         private Node node;
 
         public Executor(Node node) {
@@ -68,16 +76,17 @@ public class GetTimeout extends ClusterToolCmd {
         }
 
         @Override
-        public String execute() {
+        public List<String> execute() {
             ClusterToolNodeProbe probe = connect(node);
 
             try {
-                String template = "%s's timeout for type %s: %s ms";
-                String result = String.format(template, node.server, args.get(0), probe.getTimeout(args.get(0)));
-                return result;
+                List<String> row = new ArrayList<String>() {{
+                    add(node.server);
+                }};
+                row.add(String.valueOf(probe.getTimeout(args.get(0))));
+                return row;
             } catch (Exception e) {
-                String error = String.format("%s failed with error: %s", node.server, e.toString());
-                return error;
+                throw e;
             }
         }
     }

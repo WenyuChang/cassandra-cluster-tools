@@ -68,7 +68,7 @@ public class Snapshot extends ClusterToolCmd {
 
         for (Map.Entry<ClusterToolCmd.Node, Future<String>> future : futures.entrySet()) {
             try {
-                future.getValue().get(Constants.MAX_PARALLEL_WAIT_IN_SEC, TimeUnit.SECONDS);
+                System.out.println(future.getValue().get(Constants.MAX_PARALLEL_WAIT_IN_SEC, TimeUnit.SECONDS));
             } catch (Exception ex) {
                 System.out.println(String.format("%s failed with error: %s", future.getKey().server, ex.toString()));
                 ex.printStackTrace();
@@ -90,7 +90,7 @@ public class Snapshot extends ClusterToolCmd {
 
                 StringBuilder sb = new StringBuilder();
 
-                sb.append("Requested creating snapshot(s) for ");
+                sb.append("Requested creating snapshot(s) on " + OutTextStyle.ANSI_RED + node.server + OutTextStyle.ANSI_RESET + " for ");
 
                 Map<String, String> options = new HashMap<String, String>();
                 options.put("skipFlush", Boolean.toString(skipFlush));

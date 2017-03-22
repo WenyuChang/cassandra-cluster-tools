@@ -17,25 +17,26 @@
  */
 package com.wenyu.clustertools;
 
-import com.wenyu.utils.*;
-import io.airlift.command.Arguments;
+import com.wenyu.utils.AsyncTask;
+import com.wenyu.utils.ClusterToolNodeProbe;
+import com.wenyu.utils.Constants;
+import com.wenyu.utils.TableGenerator;
 import io.airlift.command.Command;
 import io.airlift.command.Option;
+import org.apache.cassandra.tools.NodeProbe;
+import org.apache.cassandra.tools.NodeTool.NodeToolCmd;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
-import static com.google.common.collect.Iterables.toArray;
-import static org.apache.commons.lang3.ArrayUtils.EMPTY_STRING_ARRAY;
-
-@Command(name = "flush", description = "Flush one or more tables")
-public class Flush extends ClusterToolCmd {
-    @Arguments(usage = "[<keyspace> <tables>...]", description = "The keyspace followed by one or many tables")
-    private List<String> args = new ArrayList<>();
-
+@Command(name = "getstreamthroughput", description = "Print the Mb/s throughput cap for streaming in the system")
+public class GetStreamThroughput extends ClusterToolCmd {
     @Option(title = "parallel executor", name = {"-p", "--par-jobs"}, description = "Number of threads to get timeout of all nodes.")
     private int parallel = 1;
 
@@ -43,50 +44,48 @@ public class Flush extends ClusterToolCmd {
     public void execute() {
         ExecutorService executor = Executors.newFixedThreadPool(parallel);
 
-        Map<ClusterToolCmd.Node, Future<Void>> futures = new HashMap<>();
-        for (ClusterToolCmd.Node node : nodes) {
+        Map<Node, Future<List<String>>> futures = new HashMap<>();
+        for (Node node : nodes) {
             futures.put(node, executor.submit(new Executor(node)));
         }
 
-        for (Map.Entry<ClusterToolCmd.Node, Future<Void>> future : futures.entrySet()) {
+        List<String> header = new ArrayList<String>() {{
+            add("Server");
+            add("Outbound Streaming Throughput");
+        }};
+
+        List<List<String>> rows = new ArrayList<>();
+        for (Map.Entry<Node, Future<List<String>>> future : futures.entrySet()) {
             try {
-                future.getValue().get(Constants.MAX_PARALLEL_WAIT_IN_SEC, TimeUnit.SECONDS);
+                rows.add(future.getValue().get(Constants.MAX_PARALLEL_WAIT_IN_SEC, TimeUnit.SECONDS));
             } catch (Exception ex) {
                 System.out.println(String.format("%s failed with error: %s", future.getKey().server, ex.toString()));
                 ex.printStackTrace();
             }
         }
+
+        System.out.println(TableGenerator.generateTable(header, rows));
     }
 
-    private class Executor extends AsyncTask<Void> {
-        private ClusterToolCmd.Node node;
+    private class Executor extends AsyncTask<List<String>> {
+        private Node node;
 
-        public Executor(ClusterToolCmd.Node node) {
+        public Executor(Node node) {
             this.node = node;
         }
 
         @Override
-        public Void execute() {
+        public List<String> execute() {
             ClusterToolNodeProbe probe = connect(node);
 
-            List<String> keyspaces = Utilities.parseOptionalKeyspace(args, probe, KeyspaceSet.NON_SYSTEM);
-            String[] tableNames = Utilities.parseOptionalTables(args);
-
-            for (String keyspace : keyspaces) {
-                try {
-                    probe.forceKeyspaceFlush(keyspace, tableNames);
-                } catch (Exception e) {
-                    throw new RuntimeException("Error occurred during flushing", e);
-                }
+            try {
+                List<String> result = new ArrayList<>();
+                result.add(node.server);
+                result.add(probe.getStreamThroughput() + " Mb/s");
+                return result;
+            } catch (Exception e) {
+                throw e;
             }
-
-            return null;
-        }
-
-        @Override
-        public boolean postExecute() {
-            System.out.println("Finish flushing on" + node.server);
-            return true;
         }
     }
 }

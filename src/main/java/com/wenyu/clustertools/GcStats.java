@@ -17,25 +17,25 @@
  */
 package com.wenyu.clustertools;
 
-import com.wenyu.utils.*;
-import io.airlift.command.Arguments;
+import com.wenyu.utils.AsyncTask;
+import com.wenyu.utils.ClusterToolNodeProbe;
+import com.wenyu.utils.Constants;
+import com.wenyu.utils.TableGenerator;
 import io.airlift.command.Command;
 import io.airlift.command.Option;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
-import static com.google.common.collect.Iterables.toArray;
-import static org.apache.commons.lang3.ArrayUtils.EMPTY_STRING_ARRAY;
-
-@Command(name = "flush", description = "Flush one or more tables")
-public class Flush extends ClusterToolCmd {
-    @Arguments(usage = "[<keyspace> <tables>...]", description = "The keyspace followed by one or many tables")
-    private List<String> args = new ArrayList<>();
-
+@Command(name = "gcstats", description = "Print GC Statistics")
+public class GcStats extends ClusterToolCmd
+{
     @Option(title = "parallel executor", name = {"-p", "--par-jobs"}, description = "Number of threads to get timeout of all nodes.")
     private int parallel = 1;
 
@@ -43,22 +43,36 @@ public class Flush extends ClusterToolCmd {
     public void execute() {
         ExecutorService executor = Executors.newFixedThreadPool(parallel);
 
-        Map<ClusterToolCmd.Node, Future<Void>> futures = new HashMap<>();
+        Map<ClusterToolCmd.Node, Future<List<String>>> futures = new HashMap<>();
         for (ClusterToolCmd.Node node : nodes) {
             futures.put(node, executor.submit(new Executor(node)));
         }
 
-        for (Map.Entry<ClusterToolCmd.Node, Future<Void>> future : futures.entrySet()) {
+        List<String> header = new ArrayList<>();
+        header.add("Server");
+        header.add("Interval (ms)");
+        header.add("Max GC Elapsed (ms)");
+        header.add("Total GC Elapsed (ms)");
+        header.add("Stdev GC Elapsed (ms)");
+        header.add("GC Reclaimed (MB)");
+        header.add("Collections");
+        header.add("Direct Memory Bytes");
+
+        List<List<String>> rows = new ArrayList<>();
+        for (Map.Entry<ClusterToolCmd.Node, Future<List<String>>> future : futures.entrySet()) {
             try {
-                future.getValue().get(Constants.MAX_PARALLEL_WAIT_IN_SEC, TimeUnit.SECONDS);
+                List<String> row = future.getValue().get(Constants.MAX_PARALLEL_WAIT_IN_SEC, TimeUnit.SECONDS);
+                rows.add(row);
             } catch (Exception ex) {
                 System.out.println(String.format("%s failed with error: %s", future.getKey().server, ex.toString()));
                 ex.printStackTrace();
             }
         }
+
+        System.out.println(TableGenerator.generateTable(header, rows));
     }
 
-    private class Executor extends AsyncTask<Void> {
+    private class Executor extends AsyncTask<List<String>> {
         private ClusterToolCmd.Node node;
 
         public Executor(ClusterToolCmd.Node node) {
@@ -66,27 +80,23 @@ public class Flush extends ClusterToolCmd {
         }
 
         @Override
-        public Void execute() {
+        public List<String> execute() {
             ClusterToolNodeProbe probe = connect(node);
 
-            List<String> keyspaces = Utilities.parseOptionalKeyspace(args, probe, KeyspaceSet.NON_SYSTEM);
-            String[] tableNames = Utilities.parseOptionalTables(args);
+            double[] stats = probe.getAndResetGCStats();
+            double mean = stats[2] / stats[5];
+            double stdev = Math.sqrt((stats[3] / stats[5]) - (mean * mean));
 
-            for (String keyspace : keyspaces) {
-                try {
-                    probe.forceKeyspaceFlush(keyspace, tableNames);
-                } catch (Exception e) {
-                    throw new RuntimeException("Error occurred during flushing", e);
-                }
-            }
-
-            return null;
-        }
-
-        @Override
-        public boolean postExecute() {
-            System.out.println("Finish flushing on" + node.server);
-            return true;
+            List<String> result = new ArrayList<>();
+            result.add(node.server);
+            result.add(String.valueOf(stats[0]));
+            result.add(String.valueOf(stats[1]));
+            result.add(String.valueOf(stats[2]));
+            result.add(String.valueOf(stdev));
+            result.add(String.valueOf(stats[4]));
+            result.add(String.valueOf(stats[5]));
+            result.add(String.valueOf((long)stats[6]));
+            return result;
         }
     }
 }

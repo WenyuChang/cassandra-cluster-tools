@@ -20,13 +20,16 @@ package com.wenyu.clustertools;
 
 import com.wenyu.utils.AsyncTask;
 import com.wenyu.utils.Constants;
+import com.wenyu.utils.TableGenerator;
 import io.airlift.command.Command;
 import io.airlift.command.Option;
 import org.apache.cassandra.db.ColumnFamilyStoreMBean;
 import com.wenyu.utils.ClusterToolNodeProbe;;
 import org.apache.cassandra.tools.NodeTool.NodeToolCmd;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -46,22 +49,29 @@ public class GetConcurrentCompactors extends ClusterToolCmd
     {
         ExecutorService executor = Executors.newFixedThreadPool(parallel);
 
-        Map<Node, Future<String>> futures = new HashMap<>();
+        Map<Node, Future<List<String>>> futures = new HashMap<>();
         for (ClusterToolCmd.Node node : nodes) {
             futures.put(node, executor.submit(new Executor(node)));
         }
 
-        for (Map.Entry<ClusterToolCmd.Node, Future<String>> future : futures.entrySet()) {
+        List<String> header = new ArrayList<String>() {{
+            add("Server");
+            add("Concurrent Compactors");
+        }};
+
+        List<List<String>> rows = new ArrayList<>();
+        for (Map.Entry<ClusterToolCmd.Node, Future<List<String>>> future : futures.entrySet()) {
             try {
-                System.out.println(future.getValue().get(Constants.MAX_PARALLEL_WAIT_IN_SEC, TimeUnit.SECONDS));
+                rows.add(future.getValue().get(Constants.MAX_PARALLEL_WAIT_IN_SEC, TimeUnit.SECONDS));
             } catch (Exception ex) {
                 System.out.println(String.format("%s failed with error: %s", future.getKey().server, ex.toString()));
                 ex.printStackTrace();
             }
         }
+        System.out.println(TableGenerator.generateTable(header, rows));
     }
 
-    private class Executor extends AsyncTask<String> {
+    private class Executor extends AsyncTask<List<String>> {
         private Node node;
 
         public Executor(Node node) {
@@ -69,11 +79,12 @@ public class GetConcurrentCompactors extends ClusterToolCmd
         }
 
         @Override
-        public String execute()
+        public List<String> execute()
         {
             ClusterToolNodeProbe probe = connect(node);
-
-            String result = "Current " + node.server + "'s concurrent compactors in the system is: " + probe.getConcurrentCompactors();
+            List<String> result = new ArrayList<>();
+            result.add(node.server);
+            result.add(String.valueOf(probe.getConcurrentCompactors()));
             return result;
         }
     }

@@ -41,6 +41,11 @@ public class ClusterTool {
         commands.add(EnableAutoCompaction.class);
         commands.add(DisableAutoCompaction.class);
 
+        commands.add(CompactionStats.class);
+        commands.add(DescribeCluster.class);
+        commands.add(GcStats.class);
+        commands.add(GetStreamThroughput.class);
+
         return commands;
     }
 

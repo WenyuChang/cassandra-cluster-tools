@@ -80,12 +80,6 @@ public class GarbageCollect extends ClusterToolCmd
         }
 
         @Override
-        public boolean preExecute() {
-            System.out.println("Start to GC " + node.server);
-            return true;
-        }
-
-        @Override
         public Void execute() {
             ClusterToolNodeProbe probe = connect(node);
 
