@@ -46,6 +46,12 @@ public class ClusterTool {
         commands.add(GcStats.class);
         commands.add(GetStreamThroughput.class);
 
+        commands.add(SetStreamThroughput.class);
+        commands.add(SetCompactionThroughput.class);
+        commands.add(SetCompactionThreshold.class);
+        commands.add(SetConcurrentCompactors.class);
+        commands.add(SetTimeout.class);
+
         return commands;
     }
 
