@@ -48,6 +48,8 @@ import org.apache.cassandra.service.*;
 import org.apache.cassandra.streaming.StreamManagerMBean;
 import org.apache.cassandra.streaming.StreamState;
 import org.apache.cassandra.streaming.management.StreamStateCompositeData;
+import org.apache.cassandra.tools.BootstrapMonitor;
+import org.apache.cassandra.tools.RepairRunner;
 import org.apache.cassandra.tools.nodetool.GetTimeout;
 
 import javax.management.JMX;
@@ -339,29 +341,29 @@ public class ClusterToolNodeProbe implements AutoCloseable
 
     public void repairAsync(final PrintStream out, final String keyspace, Map<String, String> options) throws IOException
     {
-//        RepairRunner runner = new RepairRunner(out, ssProxy, keyspace, options);
-//        try
-//        {
-//            jmxc.addConnectionNotificationListener(runner, null, null);
-//            ssProxy.addNotificationListener(runner, null, null);
-//            runner.run();
-//        }
-//        catch (Exception e)
-//        {
-//            throw new IOException(e) ;
-//        }
-//        finally
-//        {
-//            try
-//            {
-//                ssProxy.removeNotificationListener(runner);
-//                jmxc.removeConnectionNotificationListener(runner);
-//            }
-//            catch (Throwable e)
-//            {
-//                out.println("Exception occurred during clean-up. " + e);
-//            }
-//        }
+        RepairRunner runner = new RepairRunner(out, ssProxy, keyspace, options);
+        try
+        {
+            jmxc.addConnectionNotificationListener(runner, null, null);
+            ssProxy.addNotificationListener(runner, null, null);
+            runner.run();
+        }
+        catch (Exception e)
+        {
+            throw new IOException(e) ;
+        }
+        finally
+        {
+            try
+            {
+                ssProxy.removeNotificationListener(runner);
+                jmxc.removeConnectionNotificationListener(runner);
+            }
+            catch (Throwable e)
+            {
+                out.println("Exception occurred during clean-up. " + e);
+            }
+        }
     }
 
     public Map<Sampler, CompositeData> getPartitionSample(String ks, String cf, int capacity, int duration, int count, List<Sampler> samplers) throws OpenDataException
@@ -818,6 +820,9 @@ public class ClusterToolNodeProbe implements AutoCloseable
     {
         Map<String, String> hostIdToEndpoint = ssProxy.getHostIdToEndpoint();
         return hostIdToEndpoint.get(ssProxy.getLocalHostId());
+    }
+    public Map<String, String> getHostIdToEndpoint() {
+        return ssProxy.getHostIdToEndpoint();
     }
 
     public String getDataCenter()
@@ -1438,37 +1443,37 @@ public class ClusterToolNodeProbe implements AutoCloseable
 
     public void resumeBootstrap(PrintStream out) throws IOException
     {
-//        BootstrapMonitor monitor = new BootstrapMonitor(out);
-//        try
-//        {
-//            jmxc.addConnectionNotificationListener(monitor, null, null);
-//            ssProxy.addNotificationListener(monitor, null, null);
-//            if (ssProxy.resumeBootstrap())
-//            {
-//                out.println("Resuming bootstrap");
-//                monitor.awaitCompletion();
-//            }
-//            else
-//            {
-//                out.println("Node is already bootstrapped.");
-//            }
-//        }
-//        catch (Exception e)
-//        {
-//            throw new IOException(e);
-//        }
-//        finally
-//        {
-//            try
-//            {
-//                ssProxy.removeNotificationListener(monitor);
-//                jmxc.removeConnectionNotificationListener(monitor);
-//            }
-//            catch (Throwable e)
-//            {
-//                out.println("Exception occurred during clean-up. " + e);
-//            }
-//        }
+        BootstrapMonitor monitor = new BootstrapMonitor(out);
+        try
+        {
+            jmxc.addConnectionNotificationListener(monitor, null, null);
+            ssProxy.addNotificationListener(monitor, null, null);
+            if (ssProxy.resumeBootstrap())
+            {
+                out.println("Resuming bootstrap");
+                monitor.awaitCompletion();
+            }
+            else
+            {
+                out.println("Node is already bootstrapped.");
+            }
+        }
+        catch (Exception e)
+        {
+            throw new IOException(e);
+        }
+        finally
+        {
+            try
+            {
+                ssProxy.removeNotificationListener(monitor);
+                jmxc.removeConnectionNotificationListener(monitor);
+            }
+            catch (Throwable e)
+            {
+                out.println("Exception occurred during clean-up. " + e);
+            }
+        }
     }
 
     public void replayBatchlog() throws IOException
