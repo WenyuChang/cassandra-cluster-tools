@@ -1494,6 +1494,10 @@ public class ClusterToolNodeProbe implements AutoCloseable
             throw new RuntimeException(e);
         }
     }
+
+    public void stopRepairSessions() {
+        ssProxy.forceTerminateAllRepairSessions();
+    }
 }
 
 class ColumnFamilyStoreMBeanIterator implements Iterator<Entry<String, ColumnFamilyStoreMBean>>

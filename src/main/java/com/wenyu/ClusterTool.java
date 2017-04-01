@@ -52,6 +52,8 @@ public class ClusterTool {
         commands.add(SetConcurrentCompactors.class);
         commands.add(SetTimeout.class);
 
+        commands.add(StopAllRepair.class);
+
         return commands;
     }
 
