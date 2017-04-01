@@ -3,6 +3,7 @@ package com.wenyu.clustertools;
 import com.wenyu.utils.AsyncTask;
 import com.wenyu.utils.ClusterToolNodeProbe;
 import com.wenyu.utils.Constants;
+import com.wenyu.utils.TableGenerator;
 import io.airlift.command.Arguments;
 import io.airlift.command.Command;
 import io.airlift.command.Option;
@@ -46,7 +47,7 @@ public class GetSSTables extends ClusterToolCmd {
             } catch (Exception ex) {}
         }
 
-        Map<Node, Future<String>> futures = new HashMap<>();
+        Map<Node, Future<List<List<String>>>> futures = new HashMap<>();
         for (InetAddress endpoint : endpoints) {
             if (!nodeMap.containsKey(endpoint)) {
                 System.out.println(endpoint.getHostAddress() + ": ? (Don't have current node JMX information)");
@@ -56,14 +57,22 @@ public class GetSSTables extends ClusterToolCmd {
             futures.put(node, executor.submit(new Executor(node, ks, cf, key)));
         }
 
-        for (Map.Entry<ClusterToolCmd.Node, Future<String>> future : futures.entrySet()) {
+        List<String> header = new ArrayList<String>() {{
+            add("Server");
+            add("SSTables");
+        }};
+
+        List<List<String>> rows = new ArrayList<>();
+        for (Map.Entry<ClusterToolCmd.Node, Future<List<List<String>>>> future : futures.entrySet()) {
             try {
-                System.out.println(future.getValue().get(Constants.MAX_PARALLEL_WAIT_IN_SEC, TimeUnit.SECONDS));
+                rows.addAll(future.getValue().get(Constants.MAX_PARALLEL_WAIT_IN_SEC, TimeUnit.SECONDS));
             } catch (Exception ex) {
                 System.out.println(String.format("%s failed with error: %s", future.getKey().server, ex.toString()));
                 ex.printStackTrace();
             }
         }
+
+        System.out.println(TableGenerator.generateTable(header, rows));
     }
 
     private ClusterToolNodeProbe getNodeProbe() {
@@ -74,7 +83,7 @@ public class GetSSTables extends ClusterToolCmd {
         return nodeProbe;
     }
 
-    private class Executor extends AsyncTask<String> {
+    private class Executor extends AsyncTask<List<List<String>>> {
         private Node node;
         private String ks;
         private String cf;
@@ -88,19 +97,25 @@ public class GetSSTables extends ClusterToolCmd {
         }
 
         @Override
-        public String execute() {
+        public List<List<String>> execute() {
             ClusterToolNodeProbe probe = connect(node);
 
             try {
                 List<String> sstables = probe.getSSTables(ks, cf, key, false);
-                StringBuilder builder = new StringBuilder();
+                List<List<String>> rows = new ArrayList<>();
+
                 for (String sstable : sstables) {
-                    builder.append(node.server + ": " + sstable + "\n");
+                    List<String> row = new ArrayList<String>() {{
+                        add(node.server);
+                    }};
+                    row.add(sstable);
+                    rows.add(row);
                 }
-                return builder.toString();
+
+                return rows;
             } catch (Exception e) {
                 String error = String.format("%s failed with error: %s", node.server, e.toString());
-                return error;
+                throw e;
             }
         }
     }

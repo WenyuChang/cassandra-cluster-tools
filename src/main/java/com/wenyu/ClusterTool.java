@@ -53,6 +53,19 @@ public class ClusterTool {
         commands.add(SetTimeout.class);
 
         commands.add(StopAllRepair.class);
+        commands.add(GetSnapshotTrueSize.class);
+        commands.add(EnableIncrementalBackup.class);
+        commands.add(DisableIncrementalBackup.class);
+        commands.add(StatusIncrementalBackup.class);
+        commands.add(Truncate.class);
+        commands.add(EnableHintedHandoff.class);
+        commands.add(DisableHintedHandoff.class);
+        commands.add(StatusHintedHandoff.class);
+        commands.add(EnableHintsForDC.class);
+        commands.add(DisableHintsForDC.class);
+        commands.add(PauseHintedHandoff.class);
+        commands.add(ResumeHintedHandoff.class);
+        commands.add(TruncateHints.class);
 
         return commands;
     }
