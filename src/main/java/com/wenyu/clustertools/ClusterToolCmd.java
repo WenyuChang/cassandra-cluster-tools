@@ -24,19 +24,60 @@ public abstract class ClusterToolCmd implements Runnable {
             description = "Path to the nodes connection information file")
     private String nodesConnectionFile = EMPTY;
 
+    @Option(type = OptionType.GLOBAL, name = {"-ni", "--node-info"},
+            description = "The host to connect to. eg: cass01/user:password")
+    private String host = EMPTY;
+
     protected List<Node> nodes;
 
     private void parseNodesConnectionFile() {
         nodes = new ArrayList<Node>();
-        if (StringUtils.isEmpty(nodesConnectionFile.trim())) {
-            // Add local
+
+        if (!StringUtils.isEmpty(host)) {
+            // Read single host from pass-in value
+            connectToNode();
+        } else if (!StringUtils.isEmpty(nodesConnectionFile)) {
+            // No single host is specified, then read nodes connection file
+            readConnectionsFile();
+        } else {
+            // Set default, and connection to local
             nodes.add(new Node());
             return;
         }
+    }
 
+    private void connectToNode() {
+        try {
+            String jmxRole = host;
+            String serverRole = jmxRole.split("/")[0];
+            String authRole = EMPTY;
+            if (jmxRole.split("/").length > 1) {
+                authRole = jmxRole.split("/")[1];
+            }
+
+            // Make sure server information is correctly formatted
+            assert serverRole.length() > 0;
+
+            Node node = new Node();
+            node.server = serverRole.split(":")[0];
+            if (serverRole.split(":").length > 1) {
+                node.port = serverRole.split(":")[1];
+            }
+
+            if (!EMPTY.equals(authRole)) {
+                node.username = authRole.split(":")[0];
+                node.password = authRole.split(":")[1];
+            }
+
+            nodes.add(node);
+        } catch (AssertionError e) {
+            throw e;
+        }
+    }
+
+    private void readConnectionsFile() {
         try {
             Set<InetAddress> nodeSet = new HashSet<>();
-
             File nodesFile = new File(nodesConnectionFile);
             Scanner scanner = new Scanner(nodesFile).useDelimiter(System.lineSeparator());
             while (scanner.hasNext())
